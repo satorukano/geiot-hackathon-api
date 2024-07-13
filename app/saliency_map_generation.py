@@ -120,7 +120,7 @@ output_dir = 'image/saliency'
 os.makedirs(output_dir, exist_ok=True)
 
 # Generate saliency maps
-xrai_attributions, im_mask = generate_saliency_maps('many.jpg')
+xrai_attributions, im_mask = generate_saliency_maps('sample.png')
 
 # Show XRAI heatmap attributions and Top 30% images, and save them
 heatmap_image = show_heatmap(xrai_attributions, title='XRAI Heatmap', save_path=os.path.join(output_dir, 'xrai_heatmap.png'))

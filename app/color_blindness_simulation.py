@@ -33,45 +33,22 @@ def simulate_tritanopia(image):
     ])
     return apply_color_blindness_filter(image, tritanopia_matrix)
 
-
-def create_blindness_image(image_path,color_blindness_type='deuteranopia'):
-# Load image
-# image_path = 'many.jpg'  # 変換したい画像のパスを指定してください
+def create_blindness_image(image_path, color_blindness_type='deuteranopia', save_path='output_image.png'):
+    # Load image
     original_image = Image.open(image_path)
-    
     
     # Apply filters
     if color_blindness_type == 'protanopia':
-        protanopia_image = simulate_protanopia(original_image)
-        return protanopia_image
+        processed_image = simulate_protanopia(original_image)
     elif color_blindness_type == 'deuteranopia':
-        deuteranopia_image = simulate_deuteranopia(original_image)
-        return deuteranopia_image
+        processed_image = simulate_deuteranopia(original_image)
     elif color_blindness_type == 'tritanopia':
-        tritanopia_image = simulate_tritanopia(original_image)
-        return tritanopia_image
-    # protanopia_image = simulate_protanopia(original_image)
-    # deuteranopia_image = simulate_deuteranopia(original_image)
-    # tritanopia_image = simulate_tritanopia(original_image)
+        processed_image = simulate_tritanopia(original_image)
+    else:
+        raise ValueError("Invalid color blindness type. Choose from 'protanopia', 'deuteranopia', or 'tritanopia'.")
+    
+    # Save the processed image as PNG
+    processed_image.save(save_path, "PNG")
 
-    # # Save results
-    # protanopia_image.save('image/protanopia_image.jpg')
-    # deuteranopia_image.save('image/deuteranopia_image.jpg')
-    # tritanopia_image.save('image/tritanopia_image.jpg')
-    # return [protanopia_image, deuteranopia_image, tritanopia_image]
-
-# Display results
-# fig, axes = plt.subplots(1, 4, figsize=(20, 5))
-# axes[0].imshow(original_image)
-# axes[0].set_title('Original')
-# axes[0].axis('off')
-# axes[1].imshow(protanopia_image)
-# axes[1].set_title('Protanopia')
-# axes[1].axis('off')
-# axes[2].imshow(deuteranopia_image)
-# axes[2].set_title('Deuteranopia')
-# axes[2].axis('off')
-# axes[3].imshow(tritanopia_image)
-# axes[3].set_title('Tritanopia')
-# axes[3].axis('off')
-# plt.show()
+# 使用例
+create_blindness_image("many.jpg", color_blindness_type='tritanopia', save_path='image3.png')
