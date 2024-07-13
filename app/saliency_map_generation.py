@@ -1,10 +1,16 @@
 import numpy as np
 import PIL.Image
+from PIL import Image  # これを追加
 from matplotlib import pylab as P
 import torch
 from torchvision import models, transforms
 import os
 import saliency.core as saliency
+
+
+def save_image(data, filename):
+    image = Image.fromarray(data)
+    image.save(filename)
 
 def convert_rgba_to_rgb(image):
     if image.shape[2] == 4:
@@ -99,29 +105,44 @@ def show_image(im, title, save_path=None):
     
     return image
 
-# Load the model
-model = models.inception_v3(pretrained=True, init_weights=False)
-eval_mode = model.eval()
+def generate_saliency_maps_images(image_path):
+    # Load the model
+    global model
+    model = models.inception_v3(pretrained=True, init_weights=False)
+    eval_mode = model.eval()
 
-# Register hooks for Grad-CAM
-conv_layer = model.Mixed_7c
-conv_layer_outputs = {}
-def conv_layer_forward(m, i, o):
-    conv_layer_outputs[saliency.base.CONVOLUTION_LAYER_VALUES] = torch.movedim(o, 1, 3).detach().numpy()
-def conv_layer_backward(m, i, o):
-    conv_layer_outputs[saliency.base.CONVOLUTION_OUTPUT_GRADIENTS] = torch.movedim(o[0], 1, 3).detach().numpy()
-conv_layer.register_forward_hook(conv_layer_forward)
-conv_layer.register_full_backward_hook(conv_layer_backward)
+    # Register hooks for Grad-CAM
+    global conv_layer_outputs
+    conv_layer = model.Mixed_7c
+    conv_layer_outputs = {}
+    def conv_layer_forward(m, i, o):
+        conv_layer_outputs[saliency.base.CONVOLUTION_LAYER_VALUES] = torch.movedim(o, 1, 3).detach().numpy()
+    def conv_layer_backward(m, i, o):
+        conv_layer_outputs[saliency.base.CONVOLUTION_OUTPUT_GRADIENTS] = torch.movedim(o[0], 1, 3).detach().numpy()
+    conv_layer.register_forward_hook(conv_layer_forward)
+    conv_layer.register_full_backward_hook(conv_layer_backward)
 
-class_idx_str = 'class_idx_str'
+    global class_idx_str
+    class_idx_str = 'class_idx_str'
 
-# Create output directory if it doesn't exist
-output_dir = 'image/saliency'
-os.makedirs(output_dir, exist_ok=True)
+    # Create output directory if it doesn't exist
+    # output_dir = 'image/saliency'
+    # os.makedirs(output_dir, exist_ok=True)
 
-# Generate saliency maps
-xrai_attributions, im_mask = generate_saliency_maps('sample.png')
+    # Generate saliency maps
+    xrai_attributions, im_mask = generate_saliency_maps(image_path)
 
-# Show XRAI heatmap attributions and Top 30% images, and save them
-heatmap_image = show_heatmap(xrai_attributions, title='XRAI Heatmap', save_path=os.path.join(output_dir, 'xrai_heatmap.png'))
-top_30_percent_image = show_image(im_mask, title='Top 30%', save_path=os.path.join(output_dir, 'top_30_percent.png'))
+    # Show XRAI heatmap attributions and Top 30% images, and save them
+    heatmap_image = show_heatmap(xrai_attributions, title='XRAI Heatmap') #, save_path=os.path.join(output_dir, 'xrai_heatmap.png'))
+    top_30_percent_image = show_image(im_mask, title='Top 30%') #, save_path=os.path.join(output_dir, 'top_30_percent.png'))
+    return [heatmap_image, top_30_percent_image]
+
+
+def main():
+    images = generate_saliency_maps_images('sample.png')
+    
+    save_image(images[0], os.path.join('image/saliency', 'heatmap_image.png'))
+    save_image(images[1], os.path.join('image/saliency', 'top_30.png'))
+
+if __name__ == '__main__':
+    main()
