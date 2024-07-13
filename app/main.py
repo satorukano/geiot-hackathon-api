@@ -1,3 +1,5 @@
+import os
+import tempfile
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,12 +41,27 @@ def process_image(image_path):
     # 色相調整画像を生成
     adjusted_image = cbc.adjust_hue_for_colorblind(image_path, 45)
 
-    # 注視マップ画像を生成
-    saliency_map_image = smg.generate_saliency_maps(image_path)
-    saliency_map_blindness_image = smg.generate_saliency_maps(blindness_image)
-    saliency_map_adjusted_image = smg.generate_saliency_maps(adjusted_image)
+    # 一時ファイルとして保存
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as blindness_tempfile:
+        blindness_image.save(blindness_tempfile.name)
+        blindness_image_path = blindness_tempfile.name
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as adjusted_tempfile:
+        adjusted_image.save(adjusted_tempfile.name)
+        adjusted_image_path = adjusted_tempfile.name
+
+    try:
+        # 注視マップ画像を生成
+        saliency_map_image = smg.generate_saliency_maps_images(image_path)
+        saliency_map_blindness_image = smg.generate_saliency_maps_images(blindness_image_path)
+        saliency_map_adjusted_image = smg.generate_saliency_maps_images(adjusted_image_path)
+    finally:
+        # 一時ファイルを削除
+        os.remove(blindness_image_path)
+        os.remove(adjusted_image_path)
 
     return [blindness_image, adjusted_image, saliency_map_image[1], saliency_map_blindness_image[1], saliency_map_adjusted_image[1]]
+
 
 # 処理状態と結果を格納する辞書
 execution_status = {}
