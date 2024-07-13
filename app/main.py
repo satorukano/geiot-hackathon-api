@@ -5,6 +5,8 @@ import uvicorn
 from io import BytesIO
 import base64
 import logging
+import color_blindness_simulation as cbs
+import color_blindness_correction as cbc
 
 # ロガーを設定
 logging.basicConfig(level=logging.DEBUG)
@@ -23,6 +25,9 @@ app.add_middleware(
 # モックの関数
 def process_image(image):
     logger.debug("Processing image")
+    blindness_image = cbs.create_blindness_image(BytesIO(image), color_blindness_type='deuteranopia')
+    adjusted_image = cbc.adjust_hue_for_colorblind(image, 45)
+
     # モックの画像処理関数（適当な処理を行う）
     # 本来は画像処理を行い、複数の画像データをリストとして返す
     return [image, image]  # 例として同じ画像を2つ返す
