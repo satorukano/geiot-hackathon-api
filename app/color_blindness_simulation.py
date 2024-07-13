@@ -1,11 +1,12 @@
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 
 def apply_color_blindness_filter(image, filter_matrix):
     """Apply a color blindness filter to an image."""
     arr = np.array(image)
-    filtered_arr = np.tensordot(arr, filter_matrix, axes=([2], [1]))
+    if arr.shape[2] == 4:  # Check if image has an alpha channel
+        arr = arr[:, :, :3]  # Drop the alpha channel
+    filtered_arr = np.dot(arr, filter_matrix.T)
     filtered_arr = np.clip(filtered_arr, 0, 255).astype(np.uint8)
     return Image.fromarray(filtered_arr)
 
@@ -33,9 +34,9 @@ def simulate_tritanopia(image):
     ])
     return apply_color_blindness_filter(image, tritanopia_matrix)
 
-def create_blindness_image(image_path, color_blindness_type='deuteranopia', save_path='output_image.png'):
+def create_blindness_image(image_path, color_blindness_type='deuteranopia', save_path=None):
     # Load image
-    original_image = Image.open(image_path)
+    original_image = Image.open(image_path).convert('RGBA')  # Ensure image is in RGBA mode
     
     # Apply filters
     if color_blindness_type == 'protanopia':
@@ -47,8 +48,14 @@ def create_blindness_image(image_path, color_blindness_type='deuteranopia', save
     else:
         raise ValueError("Invalid color blindness type. Choose from 'protanopia', 'deuteranopia', or 'tritanopia'.")
     
-    # Save the processed image as PNG
-    processed_image.save(save_path, "PNG")
+    # Save the processed image as PNG if save_path is provided
+    if save_path:
+        processed_image.save(save_path, "PNG")
+    
+    return processed_image
 
 # 使用例
-create_blindness_image("many.jpg", color_blindness_type='tritanopia', save_path='output.png')
+processed_image = create_blindness_image("sample.png", color_blindness_type='deuteranopia', save_path='output.png')
+
+# 画像を表示する場合
+processed_image.show()
