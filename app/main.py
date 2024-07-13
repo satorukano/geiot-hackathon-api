@@ -19,31 +19,32 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,   # 追記により追加
-    allow_methods=["*"],      # 追記により追加
-    allow_headers=["*"]       # 追記により追加
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 
+# バイナリデータをPNGファイルとして保存する関数
+def binary_to_image_file(binary_data, output_file_path):
+    with open(output_file_path, 'wb') as file:
+        file.write(binary_data)
+
 # モックの関数
-def process_image(image):
+def process_image(image_path):
     logger.debug("Processing image")
 
-    # バイナリデータをPIL.Imageオブジェクトに変換
-    image_pil = Image.open(BytesIO(image))
-
     # 色覚特性シミュレーション画像を生成
-    blindness_image = cbs.create_blindness_image(image_pil, color_blindness_type='deuteranopia')
+    blindness_image = cbs.create_blindness_image(image_path, color_blindness_type='deuteranopia')
 
     # 色相調整画像を生成
-    adjusted_image = cbc.adjust_hue_for_colorblind(image_pil, 45)
+    adjusted_image = cbc.adjust_hue_for_colorblind(image_path, 45)
 
     # 注視マップ画像を生成
-    saliency_map_image = smg.generate_saliency_maps(image_pil)
+    saliency_map_image = smg.generate_saliency_maps(image_path)
     saliency_map_blindness_image = smg.generate_saliency_maps(blindness_image)
     saliency_map_adjusted_image = smg.generate_saliency_maps(adjusted_image)
 
-    return [image, blindness_image, adjusted_image, saliency_map_image[1], saliency_map_blindness_image[1], saliency_map_adjusted_image[1]]
-
+    return [blindness_image, adjusted_image, saliency_map_image[1], saliency_map_blindness_image[1], saliency_map_adjusted_image[1]]
 
 # 処理状態と結果を格納する辞書
 execution_status = {}
@@ -64,9 +65,16 @@ async def upload_image(file: UploadFile = File(...), execution_id: str = Form(..
     execution_status[execution_id] = "processing"
 
     try:
+        # バイナリデータをPNGファイルとして保存
+        input_image_path = f"/tmp/{execution_id}.png"
+        binary_to_image_file(image_data, input_image_path)
+        
         # 画像処理
-        processed_images = process_image(image_data)
-        encoded_images = [base64.b64encode(img).decode('utf-8') for img in processed_images]
+        processed_images = process_image(input_image_path)
+        
+        # 画像をバイナリに変換してエンコード
+        encoded_images = [base64.b64encode(image.tobytes()).decode('utf-8') for image in processed_images]
+        
         execution_results[execution_id] = encoded_images
         # 処理状態を更新
         execution_status[execution_id] = "completed"
