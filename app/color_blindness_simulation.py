@@ -51,4 +51,4 @@ def create_blindness_image(image_path, color_blindness_type='deuteranopia', save
     processed_image.save(save_path, "PNG")
 
 # 使用例
-create_blindness_image("many.jpg", color_blindness_type='tritanopia', save_path='image3.png')
+create_blindness_image("many.jpg", color_blindness_type='tritanopia', save_path='output.png')
