@@ -7,6 +7,8 @@ import base64
 import logging
 import color_blindness_simulation as cbs
 import color_blindness_correction as cbc
+import saliency_map_generation as smg
+from PIL import Image
 
 # ロガーを設定
 logging.basicConfig(level=logging.DEBUG)
@@ -25,12 +27,21 @@ app.add_middleware(
 # モックの関数
 def process_image(image):
     logger.debug("Processing image")
-    blindness_image = cbs.create_blindness_image(BytesIO(image), color_blindness_type='deuteranopia')
-    adjusted_image = cbc.adjust_hue_for_colorblind(image, 45)
 
-    # モックの画像処理関数（適当な処理を行う）
-    # 本来は画像処理を行い、複数の画像データをリストとして返す
-    return [image, image]  # 例として同じ画像を2つ返す
+    # バイナリデータをPIL.Imageオブジェクトに変換
+    image_pil = Image.open(BytesIO(image))
+
+    # 色覚特性シミュレーション画像を生成
+    blindness_image = cbs.create_blindness_image(image_pil, color_blindness_type='deuteranopia')
+
+    # 色相調整画像を生成
+    adjusted_image = cbc.adjust_hue_for_colorblind(image_pil, 45)
+
+    # 注視マップ画像を生成
+    saliency_map_image = smg.generate_saliency_maps(image_pil)
+
+    return [blindness_image, adjusted_image, saliency_map_image]
+
 
 # 処理状態と結果を格納する辞書
 execution_status = {}
