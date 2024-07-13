@@ -1,2 +1,8 @@
 fastapi
 uvicorn
+Pillow
+matplotlib
+numpy
+torch
+torchvision
+saliency
