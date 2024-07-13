@@ -39,8 +39,10 @@ def process_image(image):
 
     # 注視マップ画像を生成
     saliency_map_image = smg.generate_saliency_maps(image_pil)
+    saliency_map_blindness_image = smg.generate_saliency_maps(blindness_image)
+    saliency_map_adjusted_image = smg.generate_saliency_maps(adjusted_image)
 
-    return [blindness_image, adjusted_image, saliency_map_image]
+    return [image, blindness_image, adjusted_image, saliency_map_image, saliency_map_blindness_image, saliency_map_adjusted_image]
 
 
 # 処理状態と結果を格納する辞書
