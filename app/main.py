@@ -23,6 +23,8 @@ results = None
 async def root():
     return {"message": "Hello World"}
 
+# curl -X POST http://localhost:8000/upload -F "file=@path/to/your/image.jpg" -F "executi^C_id=your_execution_id"
+# 上、file ... の後ろは画像ファイルへのパス
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...), execution_id: str = Form(...)):
     is_processing = True
