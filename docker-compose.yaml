@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  python-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: geiot-hackathon-api
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - "8000:8000"
