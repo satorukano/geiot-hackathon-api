@@ -6,47 +6,21 @@ from torchvision import models, transforms
 import os
 import saliency.core as saliency
 
-# Boilerplate methods.
-def ShowImage(im, title='', ax=None, save_path=None):
-    if ax is None:
-        P.figure()
-    P.axis('off')
-    P.imshow(im)
-    P.title(title)
-    if save_path:
-        P.savefig(save_path, bbox_inches='tight')
+def convert_rgba_to_rgb(image):
+    if image.shape[2] == 4:
+        rgb_image = image[:, :, :3]
+        return rgb_image
+    else:
+        return image
 
-def ShowGrayscaleImage(im, title='', ax=None, save_path=None):
-    if ax is None:
-        P.figure()
-    P.axis('off')
-    P.imshow(im, cmap=P.cm.gray, vmin=0, vmax=1)
-    P.title(title)
-    if save_path:
-        P.savefig(save_path, bbox_inches='tight')
-
-def ShowHeatMap(im, title, ax=None, save_path=None):
-    if ax is None:
-        P.figure()
-    P.axis('off')
-    P.imshow(im, cmap='inferno')
-    P.title(title)
-    if save_path:
-        P.savefig(save_path, bbox_inches='tight')
-
-def LoadImage(file_path):
+def load_image(file_path):
     im = PIL.Image.open(file_path)
     im = im.resize((299, 299))
     im = np.asarray(im)
     return im
 
-transformer = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-def PreprocessImages(images):
-    # assumes input is 4-D, with range [0,255]
-    #
-    # torchvision have color channel as first dimension
-    # with normalization relative to mean/std of ImageNet:
-    #    https://pytorch.org/vision/stable/models.html
+def preprocess_images(images):
+    transformer = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     images = np.array(images)
     images = images / 255
     images = np.transpose(images, (0, 3, 1, 2))
@@ -54,24 +28,8 @@ def PreprocessImages(images):
     images = transformer.forward(images)
     return images.requires_grad_(True)
 
-model = models.inception_v3(pretrained=True, init_weights=False)
-eval_mode = model.eval()
-
-# Register hooks for Grad-CAM, which uses the last convolution layer
-conv_layer = model.Mixed_7c
-conv_layer_outputs = {}
-def conv_layer_forward(m, i, o):
-    # move the RGB dimension to the last dimension
-    conv_layer_outputs[saliency.base.CONVOLUTION_LAYER_VALUES] = torch.movedim(o, 1, 3).detach().numpy()
-def conv_layer_backward(m, i, o):
-    # move the RGB dimension to the last dimension
-    conv_layer_outputs[saliency.base.CONVOLUTION_OUTPUT_GRADIENTS] = torch.movedim(o[0], 1, 3).detach().numpy()
-conv_layer.register_forward_hook(conv_layer_forward)
-conv_layer.register_full_backward_hook(conv_layer_backward)
-
-class_idx_str = 'class_idx_str'
 def call_model_function(images, call_model_args=None, expected_keys=None):
-    images = PreprocessImages(images)
+    images = preprocess_images(images)
     target_class_idx = call_model_args[class_idx_str]
     output = model(images)
     m = torch.nn.Softmax(dim=1)
@@ -89,50 +47,81 @@ def call_model_function(images, call_model_args=None, expected_keys=None):
         output.backward(gradient=one_hot, retain_graph=True)
         return conv_layer_outputs
 
-def convert_rgba_to_rgb(image):
-    if image.shape[2] == 4:  # チャンネル数が4の場合（RGBA）
-        # アルファチャンネルを無視してRGBに変換
-        rgb_image = image[:, :, :3]
-        return rgb_image
-    else:
-        return image
+def generate_saliency_maps(image_path):
+    im_orig = load_image(image_path)
+    im_orig = convert_rgba_to_rgb(im_orig)
+    im_tensor = preprocess_images([im_orig])
 
-# Load the image
-im_orig = LoadImage('many.jpg')
-im_orig = convert_rgba_to_rgb(im_orig)
-print(im_orig.shape)
-im_tensor = PreprocessImages([im_orig])
+    predictions = model(im_tensor)
+    predictions = predictions.detach().numpy()
+    prediction_class = np.argmax(predictions[0])
+    call_model_args = {class_idx_str: prediction_class}
 
-# Predictions
-predictions = model(im_tensor)
-predictions = predictions.detach().numpy()
-prediction_class = np.argmax(predictions[0])
-call_model_args = {class_idx_str: prediction_class}
+    im = im_orig.astype(np.float32)
+    xrai_object = saliency.XRAI()
+    xrai_attributions = xrai_object.GetMask(im, call_model_function, call_model_args, batch_size=20)
 
-print("Prediction class: " + str(prediction_class))  # Should be a doberman, class idx = 236
-im = im_orig.astype(np.float32)
+    mask = xrai_attributions >= np.percentile(xrai_attributions, 70)
+    im_mask = np.array(im_orig)
+    im_mask[~mask] = 0
 
-# Construct the saliency object. This alone doesn't do anything.
-xrai_object = saliency.XRAI()
+    return xrai_attributions, im_mask
 
-# Compute XRAI attributions with default parameters
-xrai_attributions = xrai_object.GetMask(im, call_model_function, call_model_args, batch_size=20)
+def show_heatmap(im, title, save_path=None):
+    fig, ax = P.subplots()
+    ax.axis('off')
+    ax.imshow(im, cmap='inferno')
+    ax.set_title(title)
+    if save_path:
+        fig.savefig(save_path, bbox_inches='tight')
+    fig.canvas.draw()
+    
+    heatmap_image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    heatmap_image = heatmap_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    
+    P.close(fig)
+    
+    return heatmap_image
+
+def show_image(im, title, save_path=None):
+    fig, ax = P.subplots()
+    ax.axis('off')
+    ax.imshow(im)
+    ax.set_title(title)
+    if save_path:
+        fig.savefig(save_path, bbox_inches='tight')
+    fig.canvas.draw()
+    
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    
+    P.close(fig)
+    
+    return image
+
+# Load the model
+model = models.inception_v3(pretrained=True, init_weights=False)
+eval_mode = model.eval()
+
+# Register hooks for Grad-CAM
+conv_layer = model.Mixed_7c
+conv_layer_outputs = {}
+def conv_layer_forward(m, i, o):
+    conv_layer_outputs[saliency.base.CONVOLUTION_LAYER_VALUES] = torch.movedim(o, 1, 3).detach().numpy()
+def conv_layer_backward(m, i, o):
+    conv_layer_outputs[saliency.base.CONVOLUTION_OUTPUT_GRADIENTS] = torch.movedim(o[0], 1, 3).detach().numpy()
+conv_layer.register_forward_hook(conv_layer_forward)
+conv_layer.register_full_backward_hook(conv_layer_backward)
+
+class_idx_str = 'class_idx_str'
 
 # Create output directory if it doesn't exist
 output_dir = 'image/saliency'
 os.makedirs(output_dir, exist_ok=True)
 
-# Set up matplot lib figures.
-ROWS = 1
-COLS = 3
-UPSCALE_FACTOR = 20
-P.figure(figsize=(ROWS * UPSCALE_FACTOR, COLS * UPSCALE_FACTOR))
+# Generate saliency maps
+xrai_attributions, im_mask = generate_saliency_maps('many.jpg')
 
-# Show XRAI heatmap attributions
-ShowHeatMap(xrai_attributions, title='XRAI Heatmap', save_path=os.path.join(output_dir, 'xrai_heatmap.png'))
-
-# Show most salient 30% of the image
-mask = xrai_attributions >= np.percentile(xrai_attributions, 70)
-im_mask = np.array(im_orig)
-im_mask[~mask] = 0
-ShowImage(im_mask, title='Top 30%', save_path=os.path.join(output_dir, 'top_30_percent.png'))
+# Show XRAI heatmap attributions and Top 30% images, and save them
+heatmap_image = show_heatmap(xrai_attributions, title='XRAI Heatmap', save_path=os.path.join(output_dir, 'xrai_heatmap.png'))
+top_30_percent_image = show_image(im_mask, title='Top 30%', save_path=os.path.join(output_dir, 'top_30_percent.png'))
