@@ -1,7 +1,6 @@
 from PIL import Image
 
 def adjust_hue_for_colorblind(image_path, angle):
-    # 画像を開く
     image = Image.open(image_path)
     
     # 色相を調整
@@ -16,7 +15,6 @@ def adjust_hue_for_colorblind(image_path, angle):
     image.putdata(new_data)
     image = image.convert('RGB')
     
-    # 変換後の画像を返す
     return image
 
 # 使用例
