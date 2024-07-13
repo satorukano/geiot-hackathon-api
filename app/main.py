@@ -12,19 +12,12 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# CORSの設定
-origins = [
-    "http://localhost",
-    "http://localhost:8000",
-    # 他の許可するオリジンをここに追加
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],
+    allow_credentials=True,   # 追記により追加
+    allow_methods=["*"],      # 追記により追加
+    allow_headers=["*"]       # 追記により追加
 )
 
 # モックの関数
