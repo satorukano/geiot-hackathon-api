@@ -6,4 +6,4 @@ cd geiot-hackathon-api
 sourcealiases.sh
 run-dev
 ```
-http://localhost:8000/docsが立ち上がっている，はず
+http://localhost:8000
