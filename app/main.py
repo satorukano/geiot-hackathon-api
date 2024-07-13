@@ -35,10 +35,7 @@ async def upload_image(file: UploadFile = File(...), execution_id: str = Form(..
     
 @app.get("/status")
 async def get_status(execution_id: str):
-    status = is_processing
-    if status is None:
-        return JSONResponse(content={"error": "Execution ID not found"}, status_code=404)
-    return JSONResponse(content=status)
+    return JSONResponse(content=is_processing)
 
 @app.get("/results")
 async def get_results(execution_id: str):
