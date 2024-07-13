@@ -32,7 +32,9 @@ async def upload_image(file: UploadFile = File(...), execution_id: str = Form(..
     # 画像処理
     results = process_image(image_file)
     is_processing = False
-    
+
+# http://localhost:8000/status?execution_id=1234
+# 上の?以降がクエリパラメータでつけなとだめ
 @app.get("/status")
 async def get_status(execution_id: str):
     return JSONResponse(content=is_processing)
@@ -40,9 +42,8 @@ async def get_status(execution_id: str):
 @app.get("/results")
 async def get_results(execution_id: str):
     if not is_processing:
-        if results is None:
-            return JSONResponse(content={"error": "Execution ID not found"}, status_code=404)
-        return JSONResponse(content=results)
+        if results:
+            return JSONResponse(content=results)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="debug", reload=True)
