@@ -18,5 +18,5 @@ def adjust_hue_for_colorblind(image_path, angle):
     return image
 
 # 使用例
-adjusted_image = adjust_hue_for_colorblind("sample.png", 45)  # 色相を45度回転
-adjusted_image.save("output_image.png", "PNG")  # 変換後の画像をPNG形式で保存
+# adjusted_image = adjust_hue_for_colorblind("sample.png", 45)  # 色相を45度回転
+# adjusted_image.save("output_image.png", "PNG")  # 変換後の画像をPNG形式で保存

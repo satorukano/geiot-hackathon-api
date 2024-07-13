@@ -55,7 +55,7 @@ def create_blindness_image(image_path, color_blindness_type='deuteranopia', save
     return processed_image
 
 # 使用例
-processed_image = create_blindness_image("sample.png", color_blindness_type='deuteranopia', save_path='output.png')
+# processed_image = create_blindness_image("sample.png", color_blindness_type='deuteranopia', save_path='output.png')
 
 # 画像を表示する場合
-processed_image.show()
+# processed_image.show()
