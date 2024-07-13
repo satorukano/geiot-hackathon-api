@@ -31,36 +31,43 @@ def binary_to_image_file(binary_data, output_file_path):
     with open(output_file_path, 'wb') as file:
         file.write(binary_data)
 
+def read_file_as_binary(file_path):
+    with open(file_path, 'rb') as file:
+        return file.read()
+
 # モックの関数
 def process_image(image_path):
     logger.debug("Processing image")
 
     # 色覚特性シミュレーション画像を生成
-    blindness_image = cbs.create_blindness_image(image_path, color_blindness_type='deuteranopia')
+    blindness_image_path = '/app/app/image/blindness_image/output.png'
+    cbs.create_blindness_image(image_path, color_blindness_type='deuteranopia', save_path=blindness_image_path)
 
     # 色相調整画像を生成
+    adjusted_image_path = "/app/app/image/blindness_correct/output.png"
     adjusted_image = cbc.adjust_hue_for_colorblind(image_path, 45)
+    adjusted_image.save(adjusted_image_path, "PNG")
 
-    # 一時ファイルとして保存
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as blindness_tempfile:
-        blindness_image.save(blindness_tempfile.name)
-        blindness_image_path = blindness_tempfile.name
+    # サリエンシーマップ画像を生成
+    saliency_map_image_path = "/app/app/image/saliency_map/saliency.png"
+    saliency_map_image = smg.generate_saliency_maps_images(image_path)
+    smg.save_image(saliency_map_image[1], saliency_map_image_path)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as adjusted_tempfile:
-        adjusted_image.save(adjusted_tempfile.name)
-        adjusted_image_path = adjusted_tempfile.name
+    saliency_map_blindness_image_path = "/app/app/image/saliency_map/blindness.png"
+    saliency_map_blindness_image = smg.generate_saliency_maps_images(blindness_image_path)
+    smg.save_image(saliency_map_blindness_image[1], saliency_map_blindness_image_path)
 
-    try:
-        # 注視マップ画像を生成
-        saliency_map_image = smg.generate_saliency_maps_images(image_path)
-        saliency_map_blindness_image = smg.generate_saliency_maps_images(blindness_image_path)
-        saliency_map_adjusted_image = smg.generate_saliency_maps_images(adjusted_image_path)
-    finally:
-        # 一時ファイルを削除
-        os.remove(blindness_image_path)
-        os.remove(adjusted_image_path)
+    saliency_map_adjusted_image_path = "/app/app/image/saliency_map/adjusted.png"
+    saliency_map_adjusted_image = smg.generate_saliency_maps_images(adjusted_image_path)
+    smg.save_image(saliency_map_adjusted_image[1], saliency_map_adjusted_image_path)
 
-    return [blindness_image, adjusted_image, saliency_map_image[1], saliency_map_blindness_image[1], saliency_map_adjusted_image[1]]
+    return [
+        read_file_as_binary(blindness_image_path),
+        read_file_as_binary(adjusted_image_path),
+        read_file_as_binary(saliency_map_image_path),
+        read_file_as_binary(saliency_map_blindness_image_path),
+        read_file_as_binary(saliency_map_adjusted_image_path)
+    ]
 
 # 処理状態と結果を格納する辞書
 execution_status = {}
