@@ -60,8 +60,19 @@ def process_image(image_path):
         os.remove(blindness_image_path)
         os.remove(adjusted_image_path)
 
-    return [blindness_image, adjusted_image, saliency_map_image[1], saliency_map_blindness_image[1], saliency_map_adjusted_image[1]]
+    # 画像をバイナリデータに変換
+    def image_to_binary(image):
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")
+        return buffered.getvalue()
 
+    return [
+        image_to_binary(blindness_image),
+        image_to_binary(adjusted_image),
+        image_to_binary(saliency_map_image[1]),
+        image_to_binary(saliency_map_blindness_image[1]),
+        image_to_binary(saliency_map_adjusted_image[1])
+    ]
 
 # 処理状態と結果を格納する辞書
 execution_status = {}
