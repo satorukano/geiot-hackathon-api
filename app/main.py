@@ -30,6 +30,10 @@ app.add_middleware(
 def binary_to_image_file(binary_data, output_file_path):
     with open(output_file_path, 'wb') as file:
         file.write(binary_data)
+    im = Image.open(output_file_path)
+    img_width, img_height = im.size
+    im_crop = im.crop((0, 0, img_width, img_width))
+    im_crop.save(output_file_path)
 
 def read_file_as_binary(file_path):
     with open(file_path, 'rb') as file:
@@ -40,24 +44,24 @@ def process_image(image_path):
     logger.debug("Processing image")
 
     # 色覚特性シミュレーション画像を生成
-    blindness_image_path = '/app/app/image/blindness_image/output.png'
+    blindness_image_path = './app/image/blindness_image/output.png'
     cbs.create_blindness_image(image_path, color_blindness_type='deuteranopia', save_path=blindness_image_path)
 
     # 色相調整画像を生成
-    adjusted_image_path = "/app/app/image/blindness_correct/output.png"
+    adjusted_image_path = "./app/image/blindness_correct/output.png"
     adjusted_image = cbc.adjust_hue_for_colorblind(image_path, 45)
     adjusted_image.save(adjusted_image_path, "PNG")
 
     # サリエンシーマップ画像を生成
-    saliency_map_image_path = "/app/app/image/saliency_map/saliency.png"
+    saliency_map_image_path = "./app/image/saliency_map/saliency.png"
     saliency_map_image = smg.generate_saliency_maps_images(image_path)
     smg.save_image(saliency_map_image[1], saliency_map_image_path)
 
-    saliency_map_blindness_image_path = "/app/app/image/saliency_map/blindness.png"
+    saliency_map_blindness_image_path = "./app/image/saliency_map/blindness.png"
     saliency_map_blindness_image = smg.generate_saliency_maps_images(blindness_image_path)
     smg.save_image(saliency_map_blindness_image[1], saliency_map_blindness_image_path)
 
-    saliency_map_adjusted_image_path = "/app/app/image/saliency_map/adjusted.png"
+    saliency_map_adjusted_image_path = "./app/image/saliency_map/adjusted.png"
     saliency_map_adjusted_image = smg.generate_saliency_maps_images(adjusted_image_path)
     smg.save_image(saliency_map_adjusted_image[1], saliency_map_adjusted_image_path)
 
@@ -96,7 +100,7 @@ async def upload_image(file: UploadFile = File(...), execution_id: str = Form(..
         processed_images = process_image(input_image_path)
         
         # 画像をバイナリに変換してエンコード
-        encoded_images = [base64.b64encode(image.tobytes()).decode('utf-8') for image in processed_images]
+        encoded_images = [base64.b64encode(image).decode('utf-8') for image in processed_images]
         
         execution_results[execution_id] = encoded_images
         # 処理状態を更新
