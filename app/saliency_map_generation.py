@@ -93,7 +93,7 @@ def show_image(im, title, save_path=None):
     fig, ax = P.subplots()
     ax.axis('off')
     ax.imshow(im)
-    ax.set_title(title)
+    # ax.set_title(title)
     if save_path:
         fig.savefig(save_path, bbox_inches='tight')
     fig.canvas.draw()
