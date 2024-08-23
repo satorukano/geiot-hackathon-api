@@ -13,7 +13,7 @@ def __saliency(src):
 
 
 
-def img_saliency(src_file = "sample.jpg", dst_file = "sample_output.jpg"):
+def img_saliency(src_file = "sample3.png", dst_file = "sample_output3.png"):
     image = cv2.imread(src_file)
     saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
     (success, saliemcy_map) = __saliency(image)

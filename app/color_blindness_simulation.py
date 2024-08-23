@@ -12,9 +12,9 @@ def apply_color_blindness_filter(image, filter_matrix):
 
 def simulate_protanopia(image):
     protanopia_matrix = np.array([
-        [0.567, 0.433, 0.0],
-        [0.558, 0.442, 0.0],
-        [0.0, 0.242, 0.758]
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 0, 1]
     ])
     return apply_color_blindness_filter(image, protanopia_matrix)
 
